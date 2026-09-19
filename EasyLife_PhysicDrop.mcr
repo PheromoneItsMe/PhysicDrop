@@ -49,7 +49,7 @@ toolTip:"EasyLife: PhysicDrop - In-place physical drop for multi-part models"
         (
             checkbox chk_autoStop "Auto-Stop when motion settles" checked:true tooltip:"Automatically bake and stop when all objects stop moving"
             spinner spn_frames "Max Frames:" range:[10, 500, 60] type:#integer fieldWidth:50 across:2 align:#left
-            spinner spn_gap "Contact Gap (mm):" range:[0.0, 5.0, 0.0] type:#float fieldWidth:50 align:#right
+            spinner spn_gap "Contact Gap (mm):" range:[0.0, 5.0, 1.0] type:#float fieldWidth:50 align:#right
             spinner spn_friction "Friction:" range:[0.0, 1.0, 0.7] type:#float fieldWidth:50 across:2 align:#left
             spinner spn_bounciness "Bounciness:" range:[0.0, 1.0, 0.0] type:#float fieldWidth:50 align:#right
         )
@@ -188,11 +188,17 @@ toolTip:"EasyLife: PhysicDrop - In-place physical drop for multi-part models"
                 return false
             )
 
+            local allDynMeshes = #()
+            for m in dynamicModels do (
+                local dMeshes = collectAssemblyMeshes m
+                for dm in dMeshes do appendIfUnique allDynMeshes dm
+            )
             local colliders = #()
             if (superClassOf staticNode == GeometryClass) then (
-                append colliders staticNode
+                if (findItem allDynMeshes staticNode) == 0 do append colliders staticNode
             ) else (
-                colliders = collectAssemblyMeshes staticNode
+                local rawMeshes = collectAssemblyMeshes staticNode
+                for rm in rawMeshes where (findItem allDynMeshes rm) == 0 do append colliders rm
             )
             if colliders.count == 0 do (
                 messageBox "The static collider contains no valid geometry." title:"PhysicDrop"
@@ -230,7 +236,7 @@ toolTip:"EasyLife: PhysicDrop - In-place physical drop for multi-part models"
             local fl = tyFlow name:"_EL_DROP_FLOW"
             fl.interfaceParticleEnabled = true
             fl.physXGravityEnabled = true
-            fl.physXGravityValue = -0.5
+            fl.physXGravityValue = -1.0
             fl.physXGroundCollider = false
             fl.physXSubsteps = 8
             fl.physXCCD = true
